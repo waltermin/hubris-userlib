@@ -46,6 +46,30 @@ pub fn sys_send(
     }
 }
 
+#[inline(always)]
+pub fn sys_send_to_kernel(
+    operation: u16,
+    outgoing: &[u8],
+    incoming: &mut [u8],
+    leases: &mut [Lease<'_>],
+) -> (ResponseCode, usize) {
+    let target_and_operation = u32::from(TaskId::KERNEL.0) << 16
+            | u32::from(operation);
+    let ret64 = unsafe {
+        sys_send_stub2(
+            target_and_operation,
+            outgoing.as_ptr(),
+            outgoing.len(),
+            incoming.as_mut_ptr(),
+            incoming.len(),
+            leases.as_mut_ptr().cast(),
+            leases.len(),
+        )
+    };
+    let retval = ResponseCode(ret64 as u32);
+    (retval, (ret64 >> 32) as usize)
+}
+
 global_asm!("
 .section .text.sys_send_stub
 .globl sys_send_stub
