@@ -29,7 +29,7 @@ pub fn sys_send(
     let target_and_operation = u32::from(target.0) << 16
             | u32::from(operation);
     let ret64 = unsafe {
-        sys_send_stub(
+        userlib_sys_send_stub(
             target_and_operation,
             outgoing.as_ptr(),
             outgoing.len(),
@@ -57,7 +57,7 @@ pub fn sys_send_to_kernel(
     let target_and_operation = u32::from(TaskId::KERNEL.0) << 16
             | u32::from(operation);
     let ret64 = unsafe {
-        sys_send_stub(
+        userlib_sys_send_stub(
             target_and_operation,
             outgoing.as_ptr(),
             outgoing.len(),
@@ -81,10 +81,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_send_stub
-        .globl sys_send_stub
-        .type sys_send_stub,function
-        sys_send_stub:
+        .section .text.userlib_sys_send_stub
+        .globl userlib_sys_send_stub
+        .type userlib_sys_send_stub,function
+        userlib_sys_send_stub:
             .cfi_startproc
 
             @ We get the first four arguments in r0-r3, and the next three from the stack.
@@ -132,10 +132,10 @@ cfg_if::cfg_if! {
     } else {
         // Fall back to the generally applicable, ARMv6-M-compatible subset.
         global_asm!("
-        .section .text.sys_send_stub
-        .globl sys_send_stub
-        .type sys_send_stub,function
-        sys_send_stub:
+        .section .text.userlib_sys_send_stub
+        .globl userlib_sys_send_stub
+        .type userlib_sys_send_stub,function
+        userlib_sys_send_stub:
             .cfi_startproc
 
             @ We get the first four arguments in r0-r3, and the next three on the stack.
@@ -223,7 +223,7 @@ pub fn sys_recv(
 ) -> Result<MessageOrNotification<'_>, TaskDeath> {
     let mut out = MaybeUninit::<AbiRecvMessage>::uninit();
     let retval = unsafe {
-        sys_recv_stub(
+        userlib_sys_recv_stub(
             incoming.as_mut_ptr().cast(),
             incoming.len(),
             notification_mask,
@@ -269,7 +269,7 @@ pub fn sys_recv_msg(
 ) -> Result<Message<'_>, TaskDeath> {
     let mut out = MaybeUninit::<AbiRecvMessage>::uninit();
     let retval = unsafe {
-        sys_recv_stub(
+        userlib_sys_recv_stub(
             incoming.as_mut_ptr().cast(),
             incoming.len(),
             0,
@@ -312,7 +312,7 @@ pub fn sys_recv_open(
 ) -> MessageOrNotification<'_> {
     let mut out = MaybeUninit::<AbiRecvMessage>::uninit();
     unsafe {
-        sys_recv_stub(
+        userlib_sys_recv_stub(
             incoming.as_mut_ptr().cast(),
             incoming.len(),
             notification_mask,
@@ -353,7 +353,7 @@ pub fn sys_recv_msg_open(
 ) -> Message<'_> {
     let mut out = MaybeUninit::<AbiRecvMessage>::uninit();
     unsafe {
-        sys_recv_stub(
+        userlib_sys_recv_stub(
             incoming.as_mut_ptr().cast(),
             incoming.len(),
             0, // notification mask
@@ -391,7 +391,7 @@ pub fn sys_recv_notification(
 ) -> u32 {
     let mut out = MaybeUninit::<AbiRecvMessage>::uninit();
     let retval = unsafe {
-        sys_recv_stub(
+        userlib_sys_recv_stub(
             core::ptr::null_mut(),
             0,
             notification_mask,
@@ -417,10 +417,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_recv_stub
-        .globl sys_recv_stub
-        .type sys_recv_stub,function
-        sys_recv_stub:
+        .section .text.userlib_sys_recv_stub
+        .globl userlib_sys_recv_stub
+        .type userlib_sys_recv_stub,function
+        userlib_sys_recv_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -465,10 +465,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_recv_stub
-        .globl sys_recv_stub
-        .type sys_recv_stub,function
-        sys_recv_stub:
+        .section .text.userlib_sys_recv_stub
+        .globl userlib_sys_recv_stub
+        .type userlib_sys_recv_stub,function
+        userlib_sys_recv_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -540,7 +540,7 @@ pub fn sys_reply(
     message: &[u8],
 ) {
     unsafe {
-        sys_reply_stub(
+        userlib_sys_reply_stub(
             sender.0 as u32,
             code.0,
             message.as_ptr(),
@@ -559,10 +559,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_reply_stub
-        .globl sys_reply_stub
-        .type sys_reply_stub,function
-        sys_reply_stub:
+        .section .text.userlib_sys_reply_stub
+        .globl userlib_sys_reply_stub
+        .type userlib_sys_reply_stub,function
+        userlib_sys_reply_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -596,10 +596,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_reply_stub
-        .globl sys_reply_stub
-        .type sys_reply_stub,function
-        sys_reply_stub:
+        .section .text.userlib_sys_reply_stub
+        .globl userlib_sys_reply_stub
+        .type userlib_sys_reply_stub,function
+        userlib_sys_reply_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -648,7 +648,7 @@ pub fn sys_reply_fault(
     reason: ReplyFaultReason,
 ) {
     unsafe {
-        sys_reply_fault_stub(
+        userlib_sys_reply_fault_stub(
             sender.0 as u32,
             reason as u32,
         )
@@ -665,10 +665,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_reply_fault_stub
-        .globl sys_reply_fault_stub
-        .type sys_reply_fault_stub,function
-        sys_reply_fault_stub:
+        .section .text.userlib_sys_reply_fault_stub
+        .globl userlib_sys_reply_fault_stub
+        .type userlib_sys_reply_fault_stub,function
+        userlib_sys_reply_fault_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -698,10 +698,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_reply_fault_stub
-        .globl sys_reply_fault_stub
-        .type sys_reply_fault_stub,function
-        sys_reply_fault_stub:
+        .section .text.userlib_sys_reply_fault_stub
+        .globl userlib_sys_reply_fault_stub
+        .type userlib_sys_reply_fault_stub,function
+        userlib_sys_reply_fault_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -742,7 +742,7 @@ cfg_if::cfg_if! {
 
 pub fn sys_panic(msg: &[u8]) -> ! {
     unsafe {
-        sys_panic_stub(msg.as_ptr(), msg.len())
+        userlib_sys_panic_stub(msg.as_ptr(), msg.len())
     }
 }
 
@@ -756,10 +756,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_panic_stub
-        .globl sys_panic_stub
-        .type sys_panic_stub,function
-        sys_panic_stub:
+        .section .text.userlib_sys_panic_stub
+        .globl userlib_sys_panic_stub
+        .type userlib_sys_panic_stub,function
+        userlib_sys_panic_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy, to make reconstructing the
@@ -785,10 +785,10 @@ cfg_if::cfg_if! {
         );
     } else if #[cfg(hubris_target = "thumbv6m-none-eabi")] {
         global_asm!("
-        .section .text.sys_panic_stub
-        .globl sys_panic_stub
-        .type sys_panic_stub,function
-        sys_panic_stub:
+        .section .text.userlib_sys_panic_stub
+        .globl userlib_sys_panic_stub
+        .type userlib_sys_panic_stub,function
+        userlib_sys_panic_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy, to make reconstructing the
@@ -835,10 +835,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_set_timer_stub
-        .globl sys_set_timer_stub
-        .type sys_set_timer_stub,function
-        sys_set_timer_stub:
+        .section .text.userlib_sys_set_timer_stub
+        .globl userlib_sys_set_timer_stub
+        .type userlib_sys_set_timer_stub,function
+        userlib_sys_set_timer_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -872,10 +872,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_set_timer_stub
-        .globl sys_set_timer_stub
-        .type sys_set_timer_stub,function
-        sys_set_timer_stub:
+        .section .text.userlib_sys_set_timer_stub
+        .globl userlib_sys_set_timer_stub
+        .type userlib_sys_set_timer_stub,function
+        userlib_sys_set_timer_stub:
             .cfi_startproc
 
             @ Stash the register values we're about to destroy.
@@ -923,7 +923,7 @@ pub fn sys_set_timer(
 ) {
     let raw_deadline = deadline.unwrap_or(0);
     unsafe {
-        sys_set_timer_stub(
+        userlib_sys_set_timer_stub(
             deadline.is_some() as u32,
             raw_deadline as u32,
             (raw_deadline >> 32) as u32,
@@ -948,7 +948,7 @@ struct AbiTimerSettings {
 #[inline(always)]
 pub fn sys_get_timer() -> TimerSettings {
     let out = unsafe {
-        sys_get_timer_stub()
+        userlib_sys_get_timer_stub()
     };
 
     TimerSettings {
@@ -975,10 +975,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_get_timer_stub
-        .globl sys_get_timer_stub
-        .type sys_get_timer_stub,function
-        sys_get_timer_stub:
+        .section .text.userlib_sys_get_timer_stub
+        .globl userlib_sys_get_timer_stub
+        .type userlib_sys_get_timer_stub,function
+        userlib_sys_get_timer_stub:
             .cfi_startproc
 
             @ Stash the register values that will be destroyed by the returned data.
@@ -1011,10 +1011,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_get_timer_stub
-        .globl sys_get_timer_stub
-        .type sys_get_timer_stub,function
-        sys_get_timer_stub:
+        .section .text.userlib_sys_get_timer_stub
+        .globl userlib_sys_get_timer_stub
+        .type userlib_sys_get_timer_stub,function
+        userlib_sys_get_timer_stub:
             .cfi_startproc
 
             @ Stash the register values that will be destroyed by the returned data.
@@ -1065,14 +1065,14 @@ cfg_if::cfg_if! {
 #[inline(always)]
 pub fn sys_enable_irq(bits: u32) {
     unsafe {
-        sys_irq_control_stub(bits, 1)
+        userlib_sys_irq_control_stub(bits, 1)
     }
 }
 
 #[inline(always)]
 pub fn sys_enable_irq_and_clear_pending(bits: u32) {
     unsafe {
-        sys_irq_control_stub(bits, 0b11)
+        userlib_sys_irq_control_stub(bits, 0b11)
     }
 }
 
@@ -1086,10 +1086,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_irq_control_stub
-        .globl sys_irq_control_stub
-        .type sys_irq_control_stub,function
-        sys_irq_control_stub:
+        .section .text.userlib_sys_irq_control_stub
+        .globl userlib_sys_irq_control_stub
+        .type userlib_sys_irq_control_stub,function
+        userlib_sys_irq_control_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments.
@@ -1119,10 +1119,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_irq_control_stub
-        .globl sys_irq_control_stub
-        .type sys_irq_control_stub,function
-        sys_irq_control_stub:
+        .section .text.userlib_sys_irq_control_stub
+        .globl userlib_sys_irq_control_stub
+        .type userlib_sys_irq_control_stub,function
+        userlib_sys_irq_control_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments.
@@ -1176,7 +1176,7 @@ pub fn sys_borrow_read(
     dest: &mut [u8],
 ) -> Option<usize> {
     let info64 = unsafe {
-        sys_borrow_read_stub(
+        userlib_sys_borrow_read_stub(
             lender.0 as u32,
             index as u32,
             offset as u32,
@@ -1199,7 +1199,7 @@ pub fn sys_borrow_write(
     src: &[u8],
 ) -> Option<usize> {
     let info64 = unsafe {
-        sys_borrow_write_stub(
+        userlib_sys_borrow_write_stub(
             lender.0 as u32,
             index as u32,
             offset as u32,
@@ -1221,7 +1221,7 @@ pub fn sys_borrow_info(
 ) -> Option<crate::BorrowInfo> {
     let mut info = MaybeUninit::uninit();
     unsafe {
-        sys_borrow_info_stub(
+        userlib_sys_borrow_info_stub(
             lender.0 as u32,
             index as u32,
             info.as_mut_ptr(),
@@ -1250,10 +1250,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_borrow_read_stub
-        .globl sys_borrow_read_stub
-        .type sys_borrow_read_stub,function
-        sys_borrow_read_stub:
+        .section .text.userlib_sys_borrow_read_stub
+        .globl userlib_sys_borrow_read_stub
+        .type userlib_sys_borrow_read_stub,function
+        userlib_sys_borrow_read_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments.
@@ -1293,10 +1293,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_borrow_read_stub
-        .globl sys_borrow_read_stub
-        .type sys_borrow_read_stub,function
-        sys_borrow_read_stub:
+        .section .text.userlib_sys_borrow_read_stub
+        .globl userlib_sys_borrow_read_stub
+        .type userlib_sys_borrow_read_stub,function
+        userlib_sys_borrow_read_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments.
@@ -1350,10 +1350,10 @@ cfg_if::cfg_if! {
 }
 
 global_asm!("
-.section .text.sys_borrow_write_stub
-.globl sys_borrow_write_stub
-.type sys_borrow_write_stub,function
-sys_borrow_write_stub:
+.section .text.userlib_sys_borrow_write_stub
+.globl userlib_sys_borrow_write_stub
+.type userlib_sys_borrow_write_stub,function
+userlib_sys_borrow_write_stub:
     .cfi_startproc
 
     @ Stash the register values that we'll use to carry arguments.
@@ -1414,10 +1414,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_borrow_info_stub
-        .globl sys_borrow_info_stub
-        .type sys_borrow_info_stub,function
-        sys_borrow_info_stub:
+        .section .text.userlib_sys_borrow_info_stub
+        .globl userlib_sys_borrow_info_stub
+        .type userlib_sys_borrow_info_stub,function
+        userlib_sys_borrow_info_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments and receive
@@ -1452,10 +1452,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_borrow_info_stub
-        .globl sys_borrow_info_stub
-        .type sys_borrow_info_stub,function
-        sys_borrow_info_stub:
+        .section .text.userlib_sys_borrow_info_stub
+        .globl userlib_sys_borrow_info_stub
+        .type userlib_sys_borrow_info_stub,function
+        userlib_sys_borrow_info_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments and receive
@@ -1501,7 +1501,7 @@ cfg_if::cfg_if! {
 
 pub fn sys_post(task: TaskId, notifications: u32) -> Result<(), TaskDeath> {
     let rc = unsafe {
-        sys_post_stub(
+        userlib_sys_post_stub(
             task.0 as u32,
             notifications,
         )
@@ -1524,10 +1524,10 @@ cfg_if::cfg_if! {
         hubris_target = "thumbv8m.main-none-eabihf",
     ))] {
         global_asm!("
-        .section .text.sys_post_stub
-        .globl sys_post_stub
-        .type sys_post_stub,function
-        sys_post_stub:
+        .section .text.userlib_sys_post_stub
+        .globl userlib_sys_post_stub
+        .type userlib_sys_post_stub,function
+        userlib_sys_post_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments.
@@ -1560,10 +1560,10 @@ cfg_if::cfg_if! {
         );
     } else {
         global_asm!("
-        .section .text.sys_post_stub
-        .globl sys_post_stub
-        .type sys_post_stub,function
-        sys_post_stub:
+        .section .text.userlib_sys_post_stub
+        .globl userlib_sys_post_stub
+        .type userlib_sys_post_stub,function
+        userlib_sys_post_stub:
             .cfi_startproc
 
             @ Stash the register values that we'll use to carry arguments.
@@ -1622,7 +1622,7 @@ extern "C" {
     /// assume that the _prefix_ of the `incoming` slice up to the response
     /// length has been initialized. The tail of that buffer may _not_ have been
     /// initialized.
-    fn sys_send_stub(
+    fn userlib_sys_send_stub(
         target_and_operation: u32,
         outgoing_base: *const u8,
         outgoing_len: usize,
@@ -1647,7 +1647,7 @@ extern "C" {
     /// initialized, and so it is safe to have derived the `out` pointer from a
     /// `MaybeUninit<AbiRecvMessage>`. Once this returns, you can assume the
     /// memory has been initialized.
-    fn sys_recv_stub(
+    fn userlib_sys_recv_stub(
         incoming_base: *mut u8,
         incoming_len: usize,
         notification_mask: u32,
@@ -1662,7 +1662,7 @@ extern "C" {
     /// To use this safely, the `outgoing` base/len pair must meet the validity
     /// rules for a slice reference. The easiest way to ensure this is to derive
     /// them directly from a slice reference.
-    fn sys_reply_stub(
+    fn userlib_sys_reply_stub(
         sender: u32,
         code: u32,
         outgoing_base: *const u8,
@@ -1675,7 +1675,7 @@ extern "C" {
     ///
     /// This operation has no safety implications. It's only considered `unsafe`
     /// by Rust because it's `extern "C"`. Have fun.
-    fn sys_reply_fault_stub(
+    fn userlib_sys_reply_fault_stub(
         sender: u32,
         reason: u32,
     );
@@ -1690,7 +1690,7 @@ extern "C" {
     /// perspective. They will not be dereferenced in this lifetime. They're
     /// just sent to the kernel. But, it's a good idea to use valid pointers in
     /// case somebody wants to read your string after your death.
-    fn sys_panic_stub(_msg: *const u8, _len: usize) -> !;
+    fn userlib_sys_panic_stub(_msg: *const u8, _len: usize) -> !;
 
     /// Low-level set-timer syscall stub.
     ///
@@ -1698,7 +1698,7 @@ extern "C" {
     ///
     /// This is only considered "unsafe" by Rust because it's `extern "C"`.
     /// Calling this has no safety implications. Have fun.
-    fn sys_set_timer_stub(
+    fn userlib_sys_set_timer_stub(
         enable: u32,
         raw_deadline_lo: u32,
         raw_deadline_hi: u32,
@@ -1711,15 +1711,15 @@ extern "C" {
     ///
     /// This is only considered "unsafe" by Rust because it's `extern "C"`.
     /// Calling this has no safety implications. Have fun.
-    fn sys_get_timer_stub() -> AbiTimerSettings;
+    fn userlib_sys_get_timer_stub() -> AbiTimerSettings;
 
-    fn sys_irq_control_stub(bits: u32, status: u32);
+    fn userlib_sys_irq_control_stub(bits: u32, status: u32);
 
-    fn sys_borrow_info_stub(tid_bits: u32, index: u32, out: *mut AbiBorrowInfo);
-    fn sys_borrow_read_stub(tid_bits: u32, index: u32, offset: u32, dest: *mut u8, dest_len: usize) -> u64;
-    fn sys_borrow_write_stub(tid_bits: u32, index: u32, offset: u32, src: *const u8, src_len: usize) -> u64;
+    fn userlib_sys_borrow_info_stub(tid_bits: u32, index: u32, out: *mut AbiBorrowInfo);
+    fn userlib_sys_borrow_read_stub(tid_bits: u32, index: u32, offset: u32, dest: *mut u8, dest_len: usize) -> u64;
+    fn userlib_sys_borrow_write_stub(tid_bits: u32, index: u32, offset: u32, src: *const u8, src_len: usize) -> u64;
 
-    fn sys_post_stub(tid_bits: u32, notification: u32) -> u32;
+    fn userlib_sys_post_stub(tid_bits: u32, notification: u32) -> u32;
 }
 
 #[cfg(feature = "startup")]
