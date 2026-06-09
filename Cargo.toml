@@ -18,6 +18,12 @@ no-panic = []
 # which saves a lot of space.
 no-panic-messages = []
 
+# Suppresses registration of userlib's `panic_handler` entirely, so that the
+# task (or another crate) can provide its own. This makes the `no-panic` and
+# `no-panic-messages` features irrelevant, since userlib no longer controls the
+# panic behavior.
+custom-panic-handler = []
+
 [dependencies]
 bitflags = "2.6.0"
 cfg-if = "1.0.0"

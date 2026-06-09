@@ -57,6 +57,11 @@
 //!
 //! If you provide both features, `no-panic` takes precedence.
 //!
+//! - `custom-panic-handler` suppresses registration of userlib's
+//!   `panic_handler` entirely, so that the task (or another crate) can provide
+//!   its own. When this feature is set, the `no-panic` and `no-panic-messages`
+//!   features have no effect, since userlib no longer controls panic behavior.
+//!
 //! # Startup code
 //!
 //! This crate provides the initial `_start` routine responsible for setting up
@@ -549,7 +554,12 @@ pub fn send_with_retry_on_death(
 // Rust panic support.
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "no-panic")] {
+    if #[cfg(feature = "custom-panic-handler")] {
+
+        // The task (or another crate) provides its own `panic_handler`, so we
+        // register nothing here.
+
+    } else if #[cfg(feature = "no-panic")] {
 
         // The "panic handler" that won't link, ensuring that no implicit panics
         // occur.
