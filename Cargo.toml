@@ -1,0 +1,69 @@
+[workspace]
+members = [
+    "sys/userlib",
+    "sys/abi",
+    "lib/armv6m-atomic-hack",
+    "lib/unwrap-lite",
+    "lib/volatile-const",
+    "lib/phash",
+    "lib/toml-task",
+    "build/util",
+]
+resolver = "2"
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = 2 # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
+opt-level = "z" # smaller optimizations
+
+[profile.dev]
+opt-level = 1 # no optimizations was just too painful in terms of flash size
+
+# Workspace dependencies. This is the subset of the upstream hubris workspace
+# dependencies that is actually used by `userlib` and its transitive path
+# dependencies. Versions and features are preserved verbatim from upstream.
+[workspace.dependencies]
+anyhow = { version = "1.0.31", default-features = false, features = ["std"] }
+bitflags = { version = "2.5.0", default-features = false }
+bstringify = { version = "0.1.2", default-features = false }
+byteorder = { version = "1.3.4", default-features = false }
+cfg-if = { version = "1", default-features = false }
+cortex-m = { version = "0.7", default-features = false, features = ["inline-asm"]}
+critical-section = { version = "1.1.2" }
+indexmap = { version = "1.4.0", default-features = false, features = ["serde-1"] }
+num-derive = { version = "0.4", default-features = false }
+num-traits = { version = "0.2.12", default-features = false }
+paste = { version = "1", default-features = false }
+serde = { version = "1.0.114", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0", default-features = false, features = ["std"] }
+ssmarshal = { version = "1.0.0", default-features = false }
+toml = { version = "1.1", default-features = false, features = ["parse", "display", "serde", "preserve_order"] }
+zerocopy = { version = "0.8.25", default-features = false }
+zerocopy-derive = { version = "0.8.25", default-features = false }
+
+# Oxide forks and repos
+ordered-toml = { git = "https://github.com/oxidecomputer/ordered-toml", default-features = false }
+
+[patch.crates-io]
+# See https://gitlab.com/robigalia/ssmarshal/-/merge_requests/2
+ssmarshal = { git = "https://gitlab.com/de-vri-es/ssmarshal", rev = "10e90cbe389c8f07c52815857551a051946881ab" }
+
+[workspace.lints.rust]
+elided_lifetimes_in_paths = "warn"
+
+[workspace.lints.clippy]
+# TODO: turn this back on once we've fixed them :/
+#wildcard_imports = "deny"
+
+# TODO: should clean up the comments eventually and switch these back to warn.
+too_long_first_doc_paragraph = "allow"
+doc_lazy_continuation = "allow"
+
+# TODO: these are currently allowed because it would be a giant pain to fix
+# them, but we should make them warn in the future!
+too_many_arguments = "allow"
+identity_op = "allow"
+missing_safety_doc = "allow"
+manual_inspect = "allow"
+single_match = "allow"
