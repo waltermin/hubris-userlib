@@ -1,8 +1,0 @@
-# hubris-userlib
-
-This is a task library for interfacing with the Hubris kernel, extracted from
-Cliff Biffle's [exhubris](https://github.com/cbiffle/exhubris) and augmented.
-
-## Changes
-
-- `custom-panic-handler` feature tells userlib to not register a panic handler

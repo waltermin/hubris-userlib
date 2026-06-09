@@ -4,25 +4,34 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
+default = ["startup", "panic-messages"]
 
-# Any panic! in the final task binary will cause a linker failure. This can be
-# used to ensure that all panics are proven unreachable by the compiler. This
-# causes the panic message control features to become irrelevant, since panic
-# messages can no longer occur.
-no-panic = []
+# Provides the `_start` startup routine that sets up the C/Rust runtime
+# environment (initializing `.data`, zeroing `.bss`) and calls the task's
+# `main`. This is enabled by default and is what most tasks want. Disable it if
+# the task (or another crate) needs to provide its own `_start` and entry
+# sequence.
+startup = []
 
-# The message, file, line, and column of any panic! in the task will be ignored,
-# and replaced with the string "PANIC". This ensures that integer formatting and
-# Display/Debug impls are not compiled into the task (unless used elsewhere)
-# which saves a lot of space.
-no-panic-messages = []
+# Panic handling. These three features select which `panic_handler` userlib
+# registers. They are mutually exclusive: enabling more than one is a compile
+# error. If none are enabled, userlib registers no `panic_handler`, leaving the
+# task (or another crate) to provide its own.
 
-# Suppresses registration of userlib's `panic_handler` entirely, so that the
-# task (or another crate) can provide its own. This makes the `no-panic` and
-# `no-panic-messages` features irrelevant, since userlib no longer controls the
-# panic behavior.
-custom-panic-handler = []
+# Registers the full panic handler, which formats the panic message along with
+# its file and line and reports them to the supervisor. This is the default.
+panic-messages = []
+
+# Registers a minimal panic handler that reports the fixed string "PANIC"
+# instead of the real message. This omits the message-formatting machinery
+# (integer formatting, Display/Debug impls, etc. unless used elsewhere), saving
+# a lot of flash, at the cost of debuggability.
+panic-no-messages = []
+
+# Disallows panics entirely: any panic! that the compiler cannot prove
+# unreachable becomes a link-time error. No runtime panic handler is involved,
+# so the message-formatting features have nothing to act on.
+panic-never = []
 
 [dependencies]
 bitflags = "2.6.0"

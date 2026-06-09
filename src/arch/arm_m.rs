@@ -2,11 +2,13 @@ use core::arch::global_asm;
 use core::mem::MaybeUninit;
 use crate::{Lease, AbiLease, TaskId, Sysnum, TaskDeath, Truncated, ResponseCode, Message, MessageOrNotification, TimerSettings, ReplyFaultReason, LeaseAttributes};
 
+#[cfg(feature = "startup")]
 extern "Rust" {
     /// Unresolved symbol for the application main function.
     fn main() -> !;
 }
 
+#[cfg(feature = "startup")]
 extern "C" {
     /// Our actual startup routine.
     fn _start() -> !;
@@ -1720,6 +1722,7 @@ extern "C" {
     fn sys_post_stub(tid_bits: u32, notification: u32) -> u32;
 }
 
+#[cfg(feature = "startup")]
 cfg_if::cfg_if! {
     if #[cfg(hubris_target = "thumbv6m-none-eabi")] {
         global_asm!("

@@ -42,31 +42,43 @@
 //!
 //! # Panic support
 //!
-//! `userlib` provides the Rust `panic_handler` that allows tasks to panic. This
-//! is controlled by two features, which should only be set in top-level task
-//! executables (and not in libraries):
+//! `userlib` provides the Rust `panic_handler` that allows tasks to panic. The
+//! handler is chosen by one of three mutually exclusive features, which should
+//! only be set in top-level task executables (and not in libraries):
 //!
-//! - `no-panic-messages` suppresses panic message generation, replacing any
-//!   panic message with the fixed string `"PANIC"`. This can save considerable
-//!   flash space in a task, at the cost of making debugging annoying.
+//! - `panic-messages` (the default) registers the full panic handler, which
+//!   formats the panic message together with its file and line and reports them
+//!   to the supervisor. This is what most tasks want.
 //!
-//! - `no-panic` converts any `panic!` that is not successfully optimized away
-//!   by the compiler into an **error at link time.** This can be used to
-//!   prevent panics from creeping into tasks that don't want them. Currently,
-//!   _locating_ the panic in question is kind of a pain.
+//! - `panic-no-messages` registers a minimal handler that reports the fixed
+//!   string `"PANIC"` instead of the real message. This omits the
+//!   message-formatting machinery (integer formatting, `Display`/`Debug` impls,
+//!   and so on, unless used elsewhere), saving considerable flash space at the
+//!   cost of making debugging annoying.
 //!
-//! If you provide both features, `no-panic` takes precedence.
+//! - `panic-never` disallows panics outright: any `panic!` that the compiler
+//!   cannot prove unreachable becomes an **error at link time.** This keeps
+//!   panics from creeping into tasks that don't want them. (Currently,
+//!   _locating_ an offending panic is kind of a pain.)
 //!
-//! - `custom-panic-handler` suppresses registration of userlib's
-//!   `panic_handler` entirely, so that the task (or another crate) can provide
-//!   its own. When this feature is set, the `no-panic` and `no-panic-messages`
-//!   features have no effect, since userlib no longer controls panic behavior.
+//! Enabling more than one of these is a compile error. Because `panic-messages`
+//! is a default feature, selecting a different one requires turning off default
+//! features first (e.g. `default-features = false`).
+//!
+//! If you want to provide your own `panic_handler` (in the task or another
+//! crate), enable *none* of these features. With no panic feature set, userlib
+//! registers no handler and leaves it to you.
 //!
 //! # Startup code
 //!
 //! This crate provides the initial `_start` routine responsible for setting up
-//! the environment for Rust code in your task. It is currently not configurable
-//! and should appear as if by magic.
+//! the environment for Rust code in your task. This is controlled by a feature:
+//!
+//! - `startup` (enabled by default) provides the `_start` routine, which
+//!   initializes the `.data` and `.bss` sections and then calls the task's
+//!   `main`. Most tasks want this, and it should appear as if by magic. Disable
+//!   this feature (by turning off default features) if the task, or another
+//!   crate, needs to provide its own `_start` and entry sequence.
 //!
 //! # Missing from this crate
 //!
@@ -542,16 +554,26 @@ pub fn send_with_retry_on_death(
 ///////////////////////////////////////////////////////////////////////////////
 // Rust panic support.
 
+// The panic features are mutually exclusive. Catch conflicting combinations
+// here with a clear message rather than silently letting one win.
+#[cfg(any(
+    all(feature = "panic-messages", feature = "panic-no-messages"),
+    all(feature = "panic-messages", feature = "panic-never"),
+    all(feature = "panic-no-messages", feature = "panic-never"),
+))]
+compile_error!(
+    "the `panic-messages`, `panic-no-messages`, and `panic-never` features are \
+     mutually exclusive; enable at most one. Note that `panic-messages` is a \
+     default feature, so you may need `default-features = false` to select a \
+     different one."
+);
+
 cfg_if::cfg_if! {
-    if #[cfg(feature = "custom-panic-handler")] {
+    if #[cfg(feature = "panic-never")] {
 
-        // The task (or another crate) provides its own `panic_handler`, so we
-        // register nothing here.
-
-    } else if #[cfg(feature = "no-panic")] {
-
-        // The "panic handler" that won't link, ensuring that no implicit panics
-        // occur.
+        // Disallow panics: register a "panic handler" that deliberately fails to
+        // link, turning any panic the compiler can't prove unreachable into a
+        // link-time error.
         #[panic_handler]
         fn panic(_: &core::panic::PanicInfo<'_>) -> !{
             extern "C" {
@@ -566,7 +588,7 @@ cfg_if::cfg_if! {
             }
         }
 
-    } else if #[cfg(feature = "no-panic-messages")] {
+    } else if #[cfg(feature = "panic-no-messages")] {
 
         // Panic with a minimal string, rather than formatting the error
         // message. When combined with LTO this optimizes out all the panic
@@ -576,7 +598,7 @@ cfg_if::cfg_if! {
             sys_panic(b"PANIC")
         }
 
-    } else {
+    } else if #[cfg(feature = "panic-messages")] {
 
         // Relatively expensive panic handler that actually formats the output.
         #[panic_handler]
@@ -719,6 +741,12 @@ cfg_if::cfg_if! {
             // can often prove can't happen, but that's not guaranteed.
             sys_panic(unsafe { writer.buf.get_unchecked(..writer.pos) })
         }
+
+    } else {
+
+        // No panic feature is enabled, so userlib registers no `panic_handler`.
+        // The task (or another crate) is expected to provide its own.
+
     }
 }
 
