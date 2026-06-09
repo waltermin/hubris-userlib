@@ -1402,6 +1402,25 @@ compile_error!(
      this check in userlib.)"
 );
 
+// The `custom-panic-handler` feature removes userlib's built-in panic handler so
+// the application can install its own. It therefore conflicts with the features
+// that configure userlib's built-in handler.
+#[cfg(all(feature = "custom-panic-handler", feature = "panic-messages"))]
+compile_error!(
+    "Both the userlib/custom-panic-handler and userlib/panic-messages feature \
+     flags are set! `panic-messages` configures userlib's built-in panic \
+     handler, but `custom-panic-handler` removes it so your application can \
+     supply its own. Enable at most one of these."
+);
+
+#[cfg(all(feature = "custom-panic-handler", feature = "no-panic"))]
+compile_error!(
+    "Both the userlib/custom-panic-handler and userlib/no-panic feature flags \
+     are set! `no-panic` installs userlib's link-error panic handler, but \
+     `custom-panic-handler` removes userlib's handler so your application can \
+     supply its own. Enable at most one of these."
+);
+
 /// Maximum length (in bytes) of the panic message string captured when the
 /// `panic-messages` feature is enabled. Panics which format messages longer
 /// than this many bytes are truncated to this length.
@@ -1420,7 +1439,11 @@ pub const PANIC_MESSAGE_MAX_LEN: usize = 128;
 /// task, to ensure that memory is available for the panic message, even if the
 /// resources have been trimmed aggressively using `xtask sizes` and `humility
 /// stackmargin`.
-#[cfg(all(not(feature = "no-panic"), feature = "panic-messages"))]
+#[cfg(all(
+    not(feature = "custom-panic-handler"),
+    not(feature = "no-panic"),
+    feature = "panic-messages"
+))]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
     // Implementation Note
@@ -1562,7 +1585,11 @@ fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
 /// Panic handler for tasks without the `panic-messages` feature enabled. This
 /// kills the task with a fixed message, `"PANIC"`. While this is less helpful
 /// than a proper panic message, the stack trace can still be informative.
-#[cfg(all(not(feature = "no-panic"), not(feature = "panic-messages")))]
+#[cfg(all(
+    not(feature = "custom-panic-handler"),
+    not(feature = "no-panic"),
+    not(feature = "panic-messages")
+))]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo<'_>) -> ! {
     sys_panic(b"PANIC")
@@ -1570,7 +1597,7 @@ fn panic(_: &core::panic::PanicInfo<'_>) -> ! {
 
 /// Panic handler for when panics are not permitted in a task. This is enabled
 /// by the `no-panic` feature and causes a link error if a panic is introduced.
-#[cfg(feature = "no-panic")]
+#[cfg(all(feature = "no-panic", not(feature = "custom-panic-handler")))]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo<'_>) -> ! {
     unsafe extern "C" {

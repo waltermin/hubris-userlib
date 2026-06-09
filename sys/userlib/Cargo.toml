@@ -7,6 +7,10 @@ edition = "2024"
 default = ["critical-section"]
 panic-messages = []
 no-panic = []
+# Suppress userlib's built-in `#[panic_handler]` so the application can provide
+# its own. Mutually exclusive with `panic-messages` and `no-panic`, which both
+# configure userlib's built-in handler.
+custom-panic-handler = []
 critical-section = ["dep:critical-section"]
 
 [dependencies]

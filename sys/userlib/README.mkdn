@@ -10,3 +10,21 @@ for use in task programs.
   binary size and worst-case stack usage. Generally this feature should only be
   set in the top-level task, _not_ in libraries.
 
+- `no-panic`: forbid panics entirely. Replaces userlib's `#[panic_handler]` with
+  one that references a nonexistent symbol, turning any reachable `panic!` into a
+  link error.
+
+- `custom-panic-handler`: do _not_ define a `#[panic_handler]` in userlib, so the
+  application can provide its own. With this feature the application is
+  responsible for supplying exactly one `#[panic_handler]`; userlib's
+  [`sys_panic`] is still available to call from it. Mutually exclusive with
+  `panic-messages` and `no-panic`, which both configure userlib's built-in
+  handler.
+
+  ```rust,ignore
+  #[panic_handler]
+  fn my_panic(_: &core::panic::PanicInfo<'_>) -> ! {
+      userlib::sys_panic(b"my message")
+  }
+  ```
+
